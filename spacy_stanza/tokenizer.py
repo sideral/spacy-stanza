@@ -167,7 +167,7 @@ class StanzaTokenizer(object):
         for ent in snlp_doc.entities:
             ent_span = doc.char_span(ent.start_char, ent.end_char, ent.type)
             ents.append(ent_span)
-        if not is_aligned or not all(ents):
+        if not is_aligned or not all(ents) and len(snlp_doc.entities) > 0:
             warnings.warn(
                 f"Can't set named entities because of multi-word token "
                 f"expansion or because the character offsets don't map to "
