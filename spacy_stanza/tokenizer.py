@@ -82,7 +82,7 @@ class StanzaTokenizer(object):
 
         snlp_doc = self.snlp(text)
         text = snlp_doc.text
-        snlp_tokens, snlp_heads = self.get_tokens_with_heads(snlp_doc)
+        snlp_tokens, snlp_heads, mwt = self.get_tokens_with_heads_and_mwt(snlp_doc)
         words = []
         spaces = []
         pos = []
@@ -159,6 +159,9 @@ class StanzaTokenizer(object):
             lemmas=lemmas,
             deps=deps,
             heads=[head + i for i, head in enumerate(heads)],
+            user_data={
+                "mwt": mwt
+            }
         )
         ents = []
         for ent in snlp_doc.entities:
@@ -190,7 +193,7 @@ class StanzaTokenizer(object):
         for text in texts:
             yield self(text)
 
-    def get_tokens_with_heads(self, snlp_doc):
+    def get_tokens_with_heads_and_mwt(self, snlp_doc):
         """Flatten the tokens in the Stanza Doc and extract the token indices
         of the sentence start tokens to set is_sent_start.
 
@@ -199,9 +202,12 @@ class StanzaTokenizer(object):
         """
         tokens = []
         heads = []
+        mwt = []
         offset = 0
         for sentence in snlp_doc.sentences:
             for token in sentence.tokens:
+                if len(token.words) > 1:
+                    mwt.append((token.text, len(tokens), len(tokens) + len(token.words)))
                 for word in token.words:
                     # Here, we're calculating the absolute token index in the doc,
                     # then the *relative* index of the head, -1 for zero-indexed
@@ -213,7 +219,7 @@ class StanzaTokenizer(object):
                     heads.append(head)
                     tokens.append(word)
             offset += sum(len(token.words) for token in sentence.tokens)
-        return tokens, heads
+        return tokens, heads, mwt
 
     def get_words_and_spaces(self, words, text):
         if "".join("".join(words).split()) != "".join(text.split()):
